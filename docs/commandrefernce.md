@@ -28,8 +28,10 @@ root@af4edc280f83:~# fabric-ca-client enroll -u http://admin:adminpw@ca:7054
 2018/12/03 16:02:03 [INFO] encoded CSR
 2018/12/03 16:02:03 [INFO] Stored client certificate at /root/.fabric-ca-client/msp/signcerts/cert.pem
 2018/12/03 16:02:03 [INFO] Stored root CA certificate at /root/.fabric-ca-client/msp/cacerts/ca-7054.pem
-
+# Registering a user
 root@af4edc280f83:~# fabric-ca-client register --id.name user1 --id.secret pwd1 --id.type user --id.attrs 'importer=true:ecert' -u http://ca:7054
 2018/12/03 16:09:01 [INFO] Configuration file location: /root/.fabric-ca-client/fabric-ca-client-config.yaml
 Password: pwd1
+# Enrolling a user
+root@90c6932cd5b0# fabric-ca-client enroll -u http://user1:pwd1@ca:7054 --enrollment.attrs "importer,email:opt"
 ```

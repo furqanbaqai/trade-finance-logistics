@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"strconv"
@@ -73,7 +74,7 @@ func (t *TradeWorkflowChaincode) Invoke(stub shim.ChaincodeStubInterface) pb.Res
 	// Step#2: Check function name and route to the relevant function accordingly
 	if function == "requestTrade" {
 		// Importer requests a trade
-		// return t.requestTrade(stub, creatorOrg, creatorCertIssuer, args)
+		return t.requestTrade(stub, creatorOrg, creatorCertIssuer, args)
 	} else if function == "acceptTrade" {
 		// Exporter accepts a trade
 		// return t.acceptTrade(stub, creatorOrg, creatorCertIssuer, args)
@@ -130,4 +131,55 @@ func (t *TradeWorkflowChaincode) Invoke(stub shim.ChaincodeStubInterface) pb.Res
 		return t.delete(stub, creatorOrg, creatorCertIssuer, args)*/
 	}
 	return shim.Error("Invalid invoke function name")
+}
+
+// Request a trade agreement
+func (t *TradeWorkflowChaincode) requestTrade(stub shim.ChaincodeStubInterface, creatorOrg string, creatorCertIssuer string, args []string) pb.Response {
+	var tradeKey string
+	var tradeAgreement *TradeAgreement
+	var tradeAgreementBytes []byte
+	var amount int
+	var err error
+
+	// ADD TRADELIMIT RETRIEVAL HERE
+
+	// Access control: Only an Importer Org member can invoke this transaction
+	if !t.testMode && !authenticateImporterOrg(creatorOrg, creatorCertIssuer) {
+		return shim.Error("Caller not a member of Importer Org. Access denied.")
+	}
+
+	if len(args) != 3 {
+		err = errors.New(fmt.Sprintf("Incorrect number of arguments. Expecting 3: {ID, Amount, Description of Goods}. Found %d", len(args)))
+		return shim.Error(err.Error())
+	}
+
+	amount, err = strconv.Atoi(string(args[1]))
+	if err != nil {
+		return shim.Error(err.Error())
+	}
+
+	// ADD TRADE LIMIT CHECK HERE
+
+	tradeAgreement = &TradeAgreement{amount, args[2], REQUESTED, 0}
+	tradeAgreementBytes, err = json.Marshal(tradeAgreement)
+	if err != nil {
+		return shim.Error("Error marshaling trade agreement structure")
+	}
+
+	// Write the state to the ledger
+	tradeKey, err = getTradeKey(stub, args[0])
+	if err != nil {
+		return shim.Error(err.Error())
+	}
+	err = stub.PutState(tradeKey, tradeAgreementBytes)
+	if err != nil {
+		return shim.Error(err.Error())
+	}
+	fmt.Printf("Trade %s request recorded\n", args[0])
+
+	return shim.Success(nil)
+}
+
+func (t *TradeWorkflowChaincode) acceptTrade(stub shim.ChaincodeStubInterface, creatorOrg string, creatorCertIssuer string, args []string) pb.Response {
+
 }
